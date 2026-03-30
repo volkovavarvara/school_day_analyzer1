@@ -1,4 +1,3 @@
-
 import streamlit as st
 import matplotlib.pyplot as plt
 
@@ -8,7 +7,6 @@ st.info("Пожалуйста, отвечайте на вопросы, имея 
 # состояние страницы
 if "show_result" not in st.session_state:
     st.session_state.show_result = False
-
 
 # Тест
 if not st.session_state.show_result:
@@ -21,6 +19,8 @@ if not st.session_state.show_result:
         sleep = st.number_input("Сколько часов вы спали в этот день?",min_value=0.0, max_value=24.0, step=0.5)
 
         school = st.number_input("Сколько у вас было уроков?",min_value=0, max_value=10, step=1)
+
+        school_hours = school * 0.75
 
         homework = st.number_input("Сколько часов вы потратили на выполнение домашнего задания в этот день?",min_value=0.0, max_value=24.0, step=0.5)
 
@@ -50,18 +50,21 @@ if not st.session_state.show_result:
         submit = st.form_submit_button("Показать результаты")
 
         if submit:
-            st.session_state.age = age
-            st.session_state.grade = grade
-            st.session_state.sleep = sleep
-            st.session_state.school = school
-            st.session_state.homework = homework
-            st.session_state.way_hours = way_hours
-            st.session_state.way_minutes = way_minutes
-            st.session_state.classes_hours = classes_hours
-            st.session_state.classes_minutes = classes_minutes
+            total_time = sleep + school_hours + homework + way_hours + classes_hours 
+            if total_time > 24:
+                st.error('Суммарное время превышает 24 часа. Проверьте данные')
+            else:
+                st.session_state.age = age
+                st.session_state.grade = grade
+                st.session_state.sleep = sleep
+                st.session_state.school_hours = school_hours
+                st.session_state.homework = homework
+                st.session_state.way_hours = way_hours
+                st.session_state.way_minutes = way_minutes
+                st.session_state.classes_hours = classes_hours
+                st.session_state.classes_minutes = classes_minutes
 
-            st.session_state.show_result = True
-
+                st.session_state.show_result = True
 
 # Результаты
 
@@ -71,7 +74,7 @@ if st.session_state.show_result:
     age = st.session_state.age
     grade = st.session_state.grade
     sleep = st.session_state.sleep
-    school = st.session_state.school
+    school_hours = st.session_state.school_hours
     homework = st.session_state.homework
     way_hours = st.session_state.way_hours
     way_minutes = st.session_state.way_minutes
@@ -81,7 +84,7 @@ if st.session_state.show_result:
     way_minutes_hours = way_minutes / 60
     classes_minutes_hours = classes_minutes / 60
 
-    free_time = 24 - (sleep + school + homework + way_hours + way_minutes_hours + classes_hours + classes_minutes_hours)
+    free_time = 24 - (sleep + school_hours + homework + way_hours + way_minutes_hours + classes_hours + classes_minutes_hours)
 
     free_time_minutes = int(free_time * 60)
     free_hours = free_time_minutes // 60
@@ -141,10 +144,17 @@ if st.session_state.show_result:
         st.write("Время, затраченное на выполнение домашнего задания, превышает рекомендованную норму для вашего класса.")
         st.write("Рекомендуется сократить время выполнения домашнего задания, чтобы избежать переутомления и сохранить время для отдыха и сна.")
 
+    # Оценка загруженности дня
+    if free_time < 2:
+        st.error('День сильно перегружен. Практически нет времени на отдых')
+    elif free_time < 5:
+        st.warning('День умеренно загружен')
+    else:
+        st.success('День сбалансирован')
 
     # Диаграмма
     labels = ["сон", "школа", "домашнее задание", "дорога", "доп.занятия", "свободное время"]
-    sizes = [sleep, school, homework, way_hours + way_minutes_hours, classes_hours + classes_minutes_hours, free_time]
+    sizes = [sleep, school_hours, homework, way_hours + way_minutes_hours, classes_hours + classes_minutes_hours, free_time]
     fig, ax = plt.subplots()
     ax.pie(sizes, labels = labels, autopct = "%1.1f%%", startangle = 90)        
     ax.axis("equal")        
